@@ -50,3 +50,16 @@ New columns are added automatically via `ALTER TABLE` migrations on plugin start
 ## [0.1.0] — 2026-04-26
 
 Initial release. Passive per-turn telemetry logging to SQLite. Token counts, tool calls, skill usage, cost estimates. Slash commands `/telemetry-report` and `/telemetry-inspect`.
+# 0.3.0
+
+- Add an OpenCode V2 lifecycle, public step-event subscription and tool-hook adapter;
+  retain the independent V1 implementation for >=1.18.29, including 1.19.4.
+- Record V2's reported costs (including subscription zero), step tokens, model,
+  agent, parent sessions, failed calls and session completion without storing bodies.
+- Filter server-wide events by location/workspace, abort subscriptions and close
+  SQLite on cleanup, and fail silently on initialization errors.
+- Ship a root directory entrypoint for OpenCode 2.1.3 and build Git installs via
+  `prepare`, enabling tagged GitHub distribution without npm publishing.
+- Add V2 regression tests and make npm releases manual-only.
+- Minor bump for the additional plugin API/runtime support; CLI and telemetry DB
+  remain compatible (schema 5). Optional content inspection remains V1-only.

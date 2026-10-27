@@ -277,3 +277,37 @@ ORDER BY started_at;
 ```
 
 If no child rows appear (`parent_session_id` always NULL), opencode does not populate `parentID` and the attribution path is broken at the source. In that case, the fix would require correlating sessions via timestamp proximity or a new opencode event payload field.
+# OpenCode 2.1.3 compatibility (0.3.0)
+
+GitHub installs were tested by commit with npm 10.9.4. Plain `npm i -g github:...`
+left a dangling link into npm's deleted temporary clone despite exit 0. Adding
+`--install-links` produced a working package once, but a fresh commit preparation
+failed with ENOTEMPTY in the global prefix. `npm pack github:...` also failed
+(`GitFetcher requires an Arborist constructor`). The recommended verified path is
+therefore explicit Git clone + Bun install + npm pack + global tarball install.
+
+The V1 function entrypoint is rejected with `Plugin must export a default definition
+with an id and an effect or setup function`. V2 needs a default object with `id`
+and `setup`. A dual object also supplies V1 `server`; setup ignores legacy contexts
+because some V1 loaders enumerate callable members.
+
+Real diagnostic run on 2026-10-27 confirmed `{type, created, location, data}` rather
+than V1 `{type, properties}`. `session.created.data` contains `sessionID`, `parentID`
+and `location`; `session.step.started.data` contains `assistantMessageID`, `agent`,
+`model.{id,providerID,variant}`, `started`; `session.step.ended.data` contains tokens
+and reported cost. The terminal execution event may have no location. Start/created
+events establish ownership, so location-less completions can be safely correlated.
+Token input is fresh input; cache tokens are separate. Preserve reported zero cost.
+Title calls contribute to upstream session usage but are not assistant agent turns.
+
+The 2.1.3 SDK does not yet accept the documented subscription `types` filter: filter
+the server-wide stream locally. Each location has its own plugin instance. Tool hooks
+use `id`, `input`, and a discriminated completed `result` / failed `error`. Tool result
+content can be structured, so count serialized bytes without persisting the content.
+
+Despite current docs, 2.1.3 directory loading skips a package with only `src/index.ts`
+and package exports; the root `index.ts` fallback is required and tested installed.
+Keep the V1 file URL and V2 directory reference distinct. V1 1.19.4 was loaded with
+isolated XDG data: session/idle/error-turn writes worked; successful inference was
+blocked by stale V1 credentials (OpenAI refresh 401, Anthropic API key 401), not plugin
+loading. Never downgrade against a V2-migrated OpenCode DB (`project_id` is absent).

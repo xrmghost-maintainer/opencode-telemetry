@@ -51,26 +51,13 @@ jobs:
         run: |
           git fetch --tags
 
-          # Find the latest semver tag (vX.Y.Z), fall back to package.json version
-          LATEST=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-          if [ -z "$LATEST" ]; then
-            BASE=$(node -p "require('./package.json').version")
-            LATEST="v${BASE}"
-            echo "No existing tags found, starting from package.json version: ${LATEST}"
-          else
-            echo "Latest tag: ${LATEST}"
-          fi
-
-          MAJOR=$(echo "$LATEST" | sed 's/^v//' | cut -d. -f1)
-          MINOR=$(echo "$LATEST" | sed 's/^v//' | cut -d. -f2)
-          PATCH=$(echo "$LATEST" | sed 's/^v//' | cut -d. -f3)
-          NEW_VERSION="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+          NEW_VERSION="v$(node scripts/next-version.js)"
 
           echo "Next version: ${NEW_VERSION}"
           echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
           # Update package.json only in the workspace (never committed to main)
-          npm version "$NEW_VERSION" --no-git-tag-version
+          npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
 
       - name: Create and push tag
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}

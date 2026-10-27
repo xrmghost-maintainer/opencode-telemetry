@@ -1,14 +1,19 @@
 {
   "name": "opencode-telemetry",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local-first historical telemetry for opencode sessions. Track where your tokens go in agent orchestration chains — without external infrastructure.",
   "type": "module",
   "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/index.ts"
+  },
   "bin": {
     "opencode-telemetry": "./bin/cli.js",
     "octm": "./bin/cli.js"
   },
   "files": [
+    "index.ts",
     "src/",
     "bin/",
     "command/",
@@ -42,12 +47,14 @@
     "build:scripts": "bun build scripts/report.ts scripts/inspect.ts --target=node --external bun:sqlite --outdir=scripts",
     "build:cli": "bun build bin/cli.ts --target=node --external bun:sqlite --outfile=bin/cli.js",
     "build": "bun run build:scripts && bun run build:cli",
-    "prepack": "bun run build"
+    "prepack": "bun run build",
+    "prepare": "bun run build"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "*"
   },
   "devDependencies": {
+    "@opencode/plugin": "2.1.3",
     "@opencode-ai/plugin": "^1.14.28",
     "bun-types": "^1.3.13",
     "typescript": "^5.4.0"
