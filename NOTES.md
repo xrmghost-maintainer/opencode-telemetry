@@ -279,6 +279,10 @@ ORDER BY started_at;
 If no child rows appear (`parent_session_id` always NULL), opencode does not populate `parentID` and the attribution path is broken at the source. In that case, the fix would require correlating sessions via timestamp proximity or a new opencode event payload field.
 # OpenCode 2.1.3 compatibility (0.3.0)
 
+GitHub installs were tested by commit with npm 10.9.4. Plain `npm i -g github:...`
+left a dangling link into npm's deleted temporary clone despite exit 0. Adding
+`--install-links` produced a real installed package with built, working `octm`.
+
 The V1 function entrypoint is rejected with `Plugin must export a default definition
 with an id and an effect or setup function`. V2 needs a default object with `id`
 and `setup`. A dual object also supplies V1 `server`; setup ignores legacy contexts

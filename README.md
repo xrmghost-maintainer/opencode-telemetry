@@ -62,10 +62,13 @@ The entrypoint has independent V1 `server` and V2 `setup` implementations.
 With Bun available on `PATH` (needed to build a Git install), install the tagged source:
 
 ```bash
-npm install -g github:agostinilabsrl/opencode-telemetry#v0.3.0
+npm install -g --install-links github:agostinilabsrl/opencode-telemetry#v0.3.0
 octm help
 printf '%s\n' "$(npm root -g)/opencode-telemetry"
 ```
+
+Keep `--install-links`: npm 10.9.4 otherwise leaves a dangling global symlink to its
+temporary Git clone. The flag produces a self-contained installed package.
 
 In V2, put the **absolute directory printed above** in `plugins`, replacing the old
 telemetry entry, not adding a second copy. Example for a system npm prefix:
