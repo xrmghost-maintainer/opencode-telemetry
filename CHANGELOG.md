@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.4] — Unreleased
+
+### Fixes
+
+- Configure existing JSON or JSONC files (comments and trailing commas supported),
+  create a schema-bearing config when absent, and refuse ambiguous dual configs.
+  Preserve comments with targeted edits and retain versioned original backups;
+  refuse edits that would remove comments.
+- Declare Bun >=1.3.13 and Node >=22.5 requirements. Launch the Bun CLI through a
+  small Node wrapper with actionable installation and service-PATH diagnostics
+  when Bun is missing, including for npm installations (fixes #55).
+
 ## [0.2.0] — 2026-05-06
 
 ### New features

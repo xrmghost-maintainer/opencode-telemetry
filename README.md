@@ -4,13 +4,39 @@ Local-first historical telemetry for opencode sessions. Track where your tokens 
 
 [![npm](https://img.shields.io/npm/v/opencode-telemetry?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/opencode-telemetry)
 
+## Requirements
+
+- **Bun >=1.3.13**, available on `PATH`. The plugin and CLI use `bun:sqlite`;
+  installing the package with npm does **not** install Bun, and Node's SQLite
+  support is not a replacement.
+- **Node >=22.5** for the CLI launcher/configuration helper, and npm or Bun to install.
+
+Install Bun ([official instructions](https://bun.sh/docs/installation)):
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+export PATH="$HOME/.bun/bin:$PATH"
+bun --version
+```
+
+Services such as systemd often have a reduced PATH that does not include
+`~/.bun/bin`. Configure the service PATH, or expose Bun in a directory it searches:
+
+```bash
+sudo ln -sf "$HOME/.bun/bin/bun" /usr/local/bin/bun
+```
+
+Ensure `/usr/local/bin` is on the **service's** PATH and restart the service.
+Use the Bun installation belonging to the service user. `octm` now reports
+installation/PATH instructions if Bun cannot be started, even after an npm install.
+
 ## What it does
 
 - Logs every opencode session to a local SQLite database automatically
 - Aggregates costs across orchestration chains (conductor + all child sessions), showing the true total rather than just the parent's share
 - Forensic per-session inspection: full token trajectory, turn-by-turn context growth, identified delta drivers ("turn 32 grew by 20k tokens — likely a 41KB bash result entered history")
 - CLI binary (`octm`) generates and saves reports to disk without consuming model tokens to re-emit them
-- Zero external dependencies — your data stays on your machine, no collectors required
+- No external services — your data stays on your machine, no collectors required
 
 ## When to use this plugin
 
@@ -43,7 +69,7 @@ npm install -g opencode-telemetry
 bun add -g opencode-telemetry
 ```
 
-Add to your opencode config (`~/.config/opencode/opencode.json`):
+Add to your opencode config (`~/.config/opencode/opencode.json` or `opencode.jsonc`):
 
 ```json
 {
@@ -71,8 +97,24 @@ node "$(npm root -g)/opencode-telemetry/scripts/configure-plugin.js" v1
 
 V1 uses `"plugin": ["opencode-telemetry@0.3.0"]`, which downloads its own copy
 from npm. The script preserves unrelated settings/plugins, replaces old telemetry
-entries in both arrays, and saves the original JSON file once as
-`opencode.json.before-octm-0.3.0`. It requires valid JSON (not JSONC).
+entries in both arrays, and saves the original file once as
+`<config-file>.before-octm-<installed-version>`.
+
+The helper uses `opencode.json` if present, otherwise `opencode.jsonc`; if neither
+exists it creates `opencode.json` with `$schema` and the plugin entry. It honors
+`XDG_CONFIG_HOME`. Both files support `//` comments, `/* */` comments and trailing
+commas. Targeted edits via `jsonc-parser` preserve comments and unrelated settings
+instead of reserializing the document. If an edit would remove a comment attached
+to a replaced telemetry entry, the helper stops without writing and asks you to
+move the comment outside that entry. Existing backups are never overwritten;
+new configurations have no original to back up.
+
+If **both** files exist the helper stops with a clear error and changes neither.
+The [V1 config docs](https://opencode.ai/docs/config/) and
+[V2 config docs](https://opencode.ai/v2/docs/config) describe JSON/JSONC and
+precedence across configuration locations, but do not specify an unambiguous
+same-directory `opencode.json` versus `opencode.jsonc` precedence. Consolidate
+them into one file before using this helper rather than guessing which to edit.
 
 Pause agent jobs before upgrading OpenCode with your normal V2 installation
 procedure. After installing V2, configure the plugin **before starting sessions
@@ -123,9 +165,10 @@ The release workflow publishes automatically on pushes to `main`. It uses the
 `package.json` version when it is greater than the latest stable `vX.Y.Z` tag;
 otherwise it increments that tag's patch. Prerelease tags are ignored. With no
 stable tags, it retains the previous fallback of incrementing the package patch.
-The current package version `0.3.0` is above `v0.1.19`, so the next release will
-be **0.3.0** (tag `v0.3.0`). Do not run the upgrade until
-`npm view opencode-telemetry@0.3.0 version` succeeds. The configuration helper
+With the latest stable tag `v0.3.3` and the unchanged package version `0.3.0`,
+the next release will be **0.3.4** (tag `v0.3.4`). Wait for
+`npm view opencode-telemetry@0.3.4 version` to succeed before installing these fixes.
+The configuration helper
 reads the installed package version for the V1 npm reference and backup name;
 V2 continues to use the installed package directory.
 
