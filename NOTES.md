@@ -281,7 +281,10 @@ If no child rows appear (`parent_session_id` always NULL), opencode does not pop
 
 GitHub installs were tested by commit with npm 10.9.4. Plain `npm i -g github:...`
 left a dangling link into npm's deleted temporary clone despite exit 0. Adding
-`--install-links` produced a real installed package with built, working `octm`.
+`--install-links` produced a working package once, but a fresh commit preparation
+failed with ENOTEMPTY in the global prefix. `npm pack github:...` also failed
+(`GitFetcher requires an Arborist constructor`). The recommended verified path is
+therefore explicit Git clone + Bun install + npm pack + global tarball install.
 
 The V1 function entrypoint is rejected with `Plugin must export a default definition
 with an id and an effect or setup function`. V2 needs a default object with `id`

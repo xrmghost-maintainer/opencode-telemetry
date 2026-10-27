@@ -59,16 +59,23 @@ The plugin starts logging automatically. No configuration required.
 
 Version 0.3.0 supports OpenCode 2.1.3 and V1 >=1.18.29 (including 1.19.4).
 The entrypoint has independent V1 `server` and V2 `setup` implementations.
-With Bun available on `PATH` (needed to build a Git install), install the tagged source:
+With Bun available on `PATH`, build a package from tagged source and install it:
 
 ```bash
-npm install -g --install-links github:agostinilabsrl/opencode-telemetry#v0.3.0
+mkdir -p "$HOME/.cache"
+SOURCE="$(mktemp -d "$HOME/.cache/octm-install.XXXXXX")"
+git clone --branch v0.3.0 https://github.com/agostinilabsrl/opencode-telemetry.git "$SOURCE"
+(cd "$SOURCE" && bun install --frozen-lockfile && npm pack)
+npm install -g "$SOURCE/opencode-telemetry-0.3.0.tgz"
 octm help
 printf '%s\n' "$(npm root -g)/opencode-telemetry"
 ```
 
-Keep `--install-links`: npm 10.9.4 otherwise leaves a dangling global symlink to its
-temporary Git clone. The flag produces a self-contained installed package.
+Before the release is merged/tagged, clone without `--branch` and run
+`git -C "$SOURCE" checkout --detach <reviewed-commit>` instead. This sequence avoids
+npm 10.9.4 Git preparation bugs: plain global Git installs can leave dangling links;
+`--install-links` worked once but fresh preparation also failed with ENOTEMPTY.
+Installing the locally packed tarball was repeatably verified. No npm publish is needed.
 
 In V2, put the **absolute directory printed above** in `plugins`, replacing the old
 telemetry entry, not adding a second copy. Example for a system npm prefix:
