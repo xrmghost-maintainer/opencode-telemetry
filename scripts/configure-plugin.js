@@ -8,8 +8,8 @@ import { fileURLToPath } from "node:url";
 export function configureTelemetry(mode, configPath, packageDirectory) {
   if (mode !== "v1" && mode !== "v2") throw new Error("Usage: configure-plugin.js v1|v2");
   const pkg = JSON.parse(readFileSync(join(packageDirectory, "package.json"), "utf8"));
-  if (pkg.name !== "opencode-telemetry" || pkg.version !== "0.3.0") {
-    throw new Error("Install opencode-telemetry@0.3.0 before configuring the plugin");
+  if (pkg.name !== "opencode-telemetry" || typeof pkg.version !== "string" || !/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(pkg.version)) {
+    throw new Error("Install a stable opencode-telemetry package before configuring the plugin");
   }
   if (!existsSync(join(packageDirectory, "index.ts"))) throw new Error("Missing plugin index.ts");
   const config = JSON.parse(readFileSync(configPath, "utf8"));
@@ -24,9 +24,9 @@ export function configureTelemetry(mode, configPath, packageDirectory) {
     if (!config[key].length) delete config[key];
   }
   const key = mode === "v1" ? "plugin" : "plugins";
-  const reference = mode === "v1" ? "opencode-telemetry@0.3.0" : resolve(packageDirectory);
+  const reference = mode === "v1" ? `opencode-telemetry@${pkg.version}` : resolve(packageDirectory);
   (config[key] ??= []).push(reference);
-  const backup = `${configPath}.before-octm-0.3.0`;
+  const backup = `${configPath}.before-octm-${pkg.version}`;
   if (!existsSync(backup)) copyFileSync(configPath, backup);
   writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
   return reference;

@@ -119,13 +119,15 @@ static pricing estimates; unknown models remain NULL. No schema change is needed
 Optional `octm inspect --content`/content cache still use the V1 server API and
 are not ported to V2; SQL and token/cost reports read the independent telemetry DB.
 
-The release workflow publishes automatically on pushes to `main`. **Currently it
-increments the latest git tag and overwrites `package.json` before publishing**;
-it does not necessarily publish the checked-in 0.3.0 version. With the current
-latest tag `v0.1.19`, it would publish **0.1.20**, not 0.3.0. The commands above are
-conditional on an actual 0.3.0 npm release; do not run the upgrade until
-`npm view opencode-telemetry@0.3.0 version` succeeds. The release workflow is
-preserved unchanged from `main`; release version policy needs owner resolution.
+The release workflow publishes automatically on pushes to `main`. It uses the
+`package.json` version when it is greater than the latest stable `vX.Y.Z` tag;
+otherwise it increments that tag's patch. Prerelease tags are ignored. With no
+stable tags, it retains the previous fallback of incrementing the package patch.
+The current package version `0.3.0` is above `v0.1.19`, so the next release will
+be **0.3.0** (tag `v0.3.0`). Do not run the upgrade until
+`npm view opencode-telemetry@0.3.0 version` succeeds. The configuration helper
+reads the installed package version for the V1 npm reference and backup name;
+V2 continues to use the installed package directory.
 
 ## Quickstart
 

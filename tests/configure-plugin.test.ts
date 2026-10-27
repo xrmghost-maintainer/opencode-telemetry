@@ -39,11 +39,20 @@ test("configure npm V1 then installed-directory V2, preserving unrelated config 
   expect(readFileSync(`${config}.before-octm-0.3.0`, "utf8")).toBe(original);
 });
 
+test("installed package version drives the npm reference and backup name", () => {
+  const { pkg, config, original } = fixture();
+  writeFileSync(join(pkg, "package.json"), '{"name":"opencode-telemetry","version":"0.10.2"}');
+  expect(configureTelemetry("v1", config, pkg)).toBe("opencode-telemetry@0.10.2");
+  expect(readFileSync(`${config}.before-octm-0.10.2`, "utf8")).toBe(original);
+  expect(configureTelemetry("v2", config, pkg)).toBe(pkg);
+  expect(readFileSync(`${config}.before-octm-0.10.2`, "utf8")).toBe(original);
+});
+
 test("invalid mode, version, JSON or plugin array never overwrite config", () => {
   const { pkg, config, original } = fixture();
   expect(() => configureTelemetry("wrong", config, pkg)).toThrow();
   expect(readFileSync(config, "utf8")).toBe(original);
-  writeFileSync(join(pkg, "package.json"), '{"name":"opencode-telemetry","version":"0.1.19"}');
+  writeFileSync(join(pkg, "package.json"), '{"name":"opencode-telemetry","version":"invalid"}');
   expect(() => configureTelemetry("v2", config, pkg)).toThrow();
   expect(readFileSync(config, "utf8")).toBe(original);
   writeFileSync(join(pkg, "package.json"), '{"name":"opencode-telemetry","version":"0.3.0"}');
