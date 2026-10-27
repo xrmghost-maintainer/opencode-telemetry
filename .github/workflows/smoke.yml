@@ -28,6 +28,9 @@ jobs:
       - name: Type check
         run: bun run typecheck
 
+      - name: Regression tests
+        run: bun test
+
       - name: Build (cli + scripts) — produces bin/cli.js required by npm bin field
         run: bun run build
 

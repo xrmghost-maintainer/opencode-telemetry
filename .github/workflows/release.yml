@@ -1,9 +1,7 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  # Publishing is an explicit human decision, never a side effect of merging.
   workflow_dispatch:
     inputs:
       dry_run:

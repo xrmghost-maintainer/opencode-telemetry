@@ -14,7 +14,7 @@ type PendingToolCall = {
   created_at: string;
 };
 
-export function createHandlers(db: DbHandle, ctx: PluginInput) {
+export function createHandlers(db: DbHandle, ctx: Pick<PluginInput, "directory" | "worktree"> & { serverUrl?: URL | null }) {
   // In-memory state per plugin process
   const seenMessageIds = new Set<string>();
   const sessionTurnCounters = new Map<string, number>();
@@ -44,7 +44,7 @@ export function createHandlers(db: DbHandle, ctx: PluginInput) {
     return idx;
   }
 
-  async function onEvent({ event }: { event: Event }): Promise<void> {
+  async function onEvent({ event, reportedCost }: { event: Event; reportedCost?: number }): Promise<void> {
     try {
       if (event.type === "session.created") {
         const s = event.properties.info;
@@ -88,7 +88,7 @@ export function createHandlers(db: DbHandle, ctx: PluginInput) {
           thinkingLevel = msg.mode;
         }
 
-        const cost = estimateCost(msg.providerID, msg.modelID, {
+        const cost = reportedCost ?? estimateCost(msg.providerID, msg.modelID, {
           input: msg.tokens.input,
           output: msg.tokens.output,
           cacheRead: msg.tokens.cache.read,
@@ -165,7 +165,7 @@ export function createHandlers(db: DbHandle, ctx: PluginInput) {
 
   async function onToolAfter(
     input: { tool: string; sessionID: string; callID: string; args: unknown },
-    output: { title: string; output: string; metadata: unknown }
+    output: { title: string; output: unknown; metadata: unknown }
   ): Promise<void> {
     try {
       const pending = pendingToolCalls.get(input.callID);

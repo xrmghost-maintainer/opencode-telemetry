@@ -43,7 +43,7 @@ npm install -g opencode-telemetry
 bun add -g opencode-telemetry
 ```
 
-Add to your opencode config (`~/.config/opencode/config.json`):
+Add to your opencode config (`~/.config/opencode/opencode.json`):
 
 ```json
 {
@@ -54,6 +54,50 @@ Add to your opencode config (`~/.config/opencode/config.json`):
 ```
 
 The plugin starts logging automatically. No configuration required.
+
+### OpenCode V2 / install without npm publishing
+
+Version 0.3.0 supports OpenCode 2.1.3 and V1 >=1.18.29 (including 1.19.4).
+The entrypoint has independent V1 `server` and V2 `setup` implementations.
+With Bun available on `PATH` (needed to build a Git install), install the tagged source:
+
+```bash
+npm install -g github:agostinilabsrl/opencode-telemetry#v0.3.0
+octm help
+printf '%s\n' "$(npm root -g)/opencode-telemetry"
+```
+
+In V2, put the **absolute directory printed above** in `plugins`, replacing the old
+telemetry entry, not adding a second copy. Example for a system npm prefix:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["/usr/lib/node_modules/opencode-telemetry"]
+}
+```
+
+OpenCode 2.1.3 local-directory discovery needs the shipped root `index.ts`;
+`main`/`exports` alone are insufficient in that release. Restart/reload the service
+or use `opencode run --standalone` to verify the new plugin in a private server.
+
+For V1 use `"plugin": ["file:///usr/lib/node_modules/opencode-telemetry/index.ts"]`
+(substitute your actual prefix). Install the package and change this V1 reference
+**before** upgrading OpenCode. After installing V2, change the reference to the
+directory form above **before running sessions**. Preserve unrelated plugins and settings.
+Do not run V1 against OpenCode's internal DB after V2 migrated it; the plugin's
+separate telemetry DB remains schema 5 and can be read by both versions.
+
+V2 records `session.step.started`/`ended` (and failed steps with usage), tool hooks,
+parent links, and completion. The public stream is server-wide; events are filtered
+by plugin location/workspace. `est_cost_usd` uses the cost reported by V2, including
+zero for subscription-backed calls; this is **not** an equivalent pay-as-you-go price.
+Auxiliary title/generate calls are not agent turns and are not included. V1 keeps
+static pricing estimates; unknown models remain NULL. No schema change is needed.
+Optional `octm inspect --content`/content cache still use the V1 server API and
+are not ported to V2; SQL and token/cost reports read the independent telemetry DB.
+
+The release workflow is manual-only: merging or tagging never publishes to npm.
 
 ## Quickstart
 
