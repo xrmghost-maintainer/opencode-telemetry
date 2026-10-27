@@ -55,30 +55,40 @@ Add to your opencode config (`~/.config/opencode/opencode.json`):
 
 The plugin starts logging automatically. No configuration required.
 
-### OpenCode V2 / install without npm publishing
+### OpenCode V1 → V2 / npm release 0.3.0
 
 Version 0.3.0 supports OpenCode 2.1.3 and V1 >=1.18.29 (including 1.19.4).
 The entrypoint has independent V1 `server` and V2 `setup` implementations.
-With Bun available on `PATH`, build a package from tagged source and install it:
+After **0.3.0 is available on npm**, install the CLI and package while still on
+OpenCode 1.19.4 (Node >=22.5, npm, and write access to your global npm prefix):
 
 ```bash
-mkdir -p "$HOME/.cache"
-SOURCE="$(mktemp -d "$HOME/.cache/octm-install.XXXXXX")"
-git clone --branch v0.3.0 https://github.com/agostinilabsrl/opencode-telemetry.git "$SOURCE"
-(cd "$SOURCE" && bun install --frozen-lockfile && npm pack)
-npm install -g "$SOURCE/opencode-telemetry-0.3.0.tgz"
+npm view opencode-telemetry@0.3.0 version
+npm install --global opencode-telemetry@0.3.0
 octm help
-printf '%s\n' "$(npm root -g)/opencode-telemetry"
+node "$(npm root -g)/opencode-telemetry/scripts/configure-plugin.js" v1
 ```
 
-Before the release is merged/tagged, clone without `--branch` and run
-`git -C "$SOURCE" checkout --detach <reviewed-commit>` instead. This sequence avoids
-npm 10.9.4 Git preparation bugs: plain global Git installs can leave dangling links;
-`--install-links` worked once but fresh preparation also failed with ENOTEMPTY.
-Installing the locally packed tarball was repeatably verified. No npm publish is needed.
+V1 uses `"plugin": ["opencode-telemetry@0.3.0"]`, which downloads its own copy
+from npm. The script preserves unrelated settings/plugins, replaces old telemetry
+entries in both arrays, and saves the original JSON file once as
+`opencode.json.before-octm-0.3.0`. It requires valid JSON (not JSONC).
 
-In V2, put the **absolute directory printed above** in `plugins`, replacing the old
-telemetry entry, not adding a second copy. Example for a system npm prefix:
+Pause agent jobs before upgrading OpenCode with your normal V2 installation
+procedure. After installing V2, configure the plugin **before starting sessions
+or restarting the shared service**:
+
+```bash
+opencode --version  # expected: v2.x; tested with v2.1.3
+node "$(npm root -g)/opencode-telemetry/scripts/configure-plugin.js" v2
+opencode service restart
+opencode service status
+opencode run --model openai/gpt-5.6-luna --format json 'Reply only OK. Do not use tools.'
+octm sql 'select session_id,total_turns,total_input_tokens,total_output_tokens,total_cached_read,est_cost_usd from sessions order by started_at desc limit 3'
+```
+
+V2 uses the **absolute directory of the npm-installed package**, not the checkout
+or an individual file. Example for a system npm prefix:
 
 ```json
 {
@@ -88,15 +98,17 @@ telemetry entry, not adding a second copy. Example for a system npm prefix:
 ```
 
 OpenCode 2.1.3 local-directory discovery needs the shipped root `index.ts`;
-`main`/`exports` alone are insufficient in that release. Restart/reload the service
-or use `opencode run --standalone` to verify the new plugin in a private server.
+`main`/`exports` alone are insufficient in that release. This installed-directory
+form was tested with a globally installed tarball in a temporary npm prefix,
+outside the source checkout. V2 also recognizes npm specifications in `plugins`
+(and the legacy `plugin` alias), but the directory form avoids a second download
+and is the verified deployment path for 2.1.3.
 
-For V1 use `"plugin": ["file:///usr/lib/node_modules/opencode-telemetry/index.ts"]`
-(substitute your actual prefix). Install the package and change this V1 reference
-**before** upgrading OpenCode. After installing V2, change the reference to the
-directory form above **before running sessions**. Preserve unrelated plugins and settings.
 Do not run V1 against OpenCode's internal DB after V2 migrated it; the plugin's
 separate telemetry DB remains schema 5 and can be read by both versions.
+Keep the same runtime user, `XDG_DATA_HOME`, and global npm prefix used by Loom;
+`TelemetryPath = octm` needs no change. The final query must include the session ID
+printed by `opencode run`, with at least one turn and nonzero output tokens.
 
 V2 records `session.step.started`/`ended` (and failed steps with usage), tool hooks,
 parent links, and completion. The public stream is server-wide; events are filtered
@@ -107,7 +119,13 @@ static pricing estimates; unknown models remain NULL. No schema change is needed
 Optional `octm inspect --content`/content cache still use the V1 server API and
 are not ported to V2; SQL and token/cost reports read the independent telemetry DB.
 
-The release workflow is manual-only: merging or tagging never publishes to npm.
+The release workflow publishes automatically on pushes to `main`. **Currently it
+increments the latest git tag and overwrites `package.json` before publishing**;
+it does not necessarily publish the checked-in 0.3.0 version. With the current
+latest tag `v0.1.19`, it would publish **0.1.20**, not 0.3.0. The commands above are
+conditional on an actual 0.3.0 npm release; do not run the upgrade until
+`npm view opencode-telemetry@0.3.0 version` succeeds. The release workflow is
+preserved unchanged from `main`; release version policy needs owner resolution.
 
 ## Quickstart
 
